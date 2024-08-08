@@ -1,11 +1,15 @@
 const express = require('express');
+const bodyParser = require('body-parser');
+const fs = require('fs');
+const path = require('path');
 const axios = require('axios');
+
 const app = express();
 const port = 3000;
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+app.use(bodyParser.json());
 
+// Function to post data
 async function postData(content) {
   try {
     const response = await axios.post('https://api.mocky.io/api/mock', {
@@ -16,25 +20,34 @@ async function postData(content) {
       secret: 'a1IY1QiCykBxFreJuOWLgQFe9UH8bii6Nrw5',
       expiration: "1year"
     });
-    return response.data;
+    return response;
   } catch (error) {
-    console.error(error);
     throw error;
   }
 }
 
-// Define a POST endpoint
+// Endpoint to upload code
 app.post('/api/mocky', async (req, res) => {
+  const { fileName } = req.body;
+
+  if (!fileName) {
+    return res.status(400).json({ error: 'File name is required.' });
+  }
+
+  const filePath = path.join(__dirname, `${fileName}.js`);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: `File not found: ${fileName}.js` });
+  }
+
   try {
-    const content = req.body.content;
-    const result = await postData(content);
-    res.status(200).json(result);
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const response = await postData(fileContent);
+    res.json({ link: response.data.link });
   } catch (error) {
-    res.status(500).json({ error: 'Something went wrong' });
+    res.status(500).json({ error: `Error: ${error.message}` });
   }
 });
 
-// Start the server
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
