@@ -27,8 +27,8 @@ async function postData(content) {
 }
 
 // Endpoint to upload code
-app.post('/api/mocky', async (req, res) => {
-  const { fileName } = req.body;
+app.get('/api/mocky', async (req, res) => {
+  const { fileName } = req.query;
 
   if (!fileName) {
     return res.status(400).json({ error: 'File name is required.' });
